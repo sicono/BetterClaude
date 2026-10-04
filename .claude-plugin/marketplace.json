@@ -1,0 +1,11 @@
+{
+  "name": "token-saver-marketplace",
+  "owner": { "name": "BlockHost" },
+  "plugins": [
+    {
+      "name": "token-saver",
+      "source": "./plugins/token-saver",
+      "description": "Ahorro de tokens sin perder calidad: bloquea logs infinitos, lecturas de archivos generados y cat de archivos enormes; handoff automatico; informe de espacio."
+    }
+  ]
+}
