@@ -3,7 +3,7 @@
 // a one-line hint to /clear between tasks. Approximate: the transcript includes pre-compaction history.
 const fs = require("fs");
 const path = require("path");
-const { loadConfig, tmpDir, safeId, readStdin } = require("./lib.js");
+const { loadConfig, tmpDir, safeId, readStdin, out } = require("./lib.js");
 
 if (process.env.TOKEN_SAVER_OFF === "1") process.exit(0);
 
@@ -21,7 +21,7 @@ readStdin((input) => {
     fs.mkdirSync(tmpDir(), { recursive: true });
     fs.writeFileSync(f, JSON.stringify({ kb }));
     const mb = (kb / 1024).toFixed(1);
-    process.stdout.write(JSON.stringify({
+    out(JSON.stringify({
       systemMessage: `token-saver: sesion larga (~${mb} MB de transcripcion, aproximado). Tarea nueva: /clear (se guarda un resumen automatico y se restaura solo). Misma tarea: /compact.`
     }));
   } catch {}

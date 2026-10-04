@@ -5,7 +5,7 @@
 //     or else the automatic one (made by autohandoff.js). Both expire after 24 h.
 const fs = require("fs");
 const path = require("path");
-const { loadConfig, tmpDir, dataDir, safeId, cwdKey, readStdin } = require("./lib.js");
+const { loadConfig, tmpDir, dataDir, safeId, cwdKey, readStdin, out } = require("./lib.js");
 
 if (process.env.TOKEN_SAVER_OFF === "1") process.exit(0);
 
@@ -33,6 +33,18 @@ readStdin((input) => {
   } catch {}
 
   const src = input.source || "startup";
+  if (src === "resume" || src === "fork") {
+    // Claude Code >= 2.1.251 reports the size of the resumed context and whether the prompt cache expired.
+    try {
+      const cfg0 = loadConfig(input.cwd || process.cwd());
+      const ct = Number(input.context_tokens);
+      if (input.prompt_cache_likely_expired && ct >= cfg0.resumeWarnTokens) {
+        const usd = Number(input.estimated_cache_write_usd);
+        out(JSON.stringify({ systemMessage: `token-saver: reanudas una sesion de ~${Math.round(ct / 1000)}k tokens y la cache del prompt ya caduco: la primera peticion los reenvia enteros${usd > 0 ? ` (~$${usd.toFixed(2)})` : ""}. Si vas a cambiar de tarea, mejor /clear (el resumen automatico se restaura solo); si sigues con lo mismo, /compact.` }));
+      }
+    } catch {}
+    process.exit(0);
+  }
   if (src !== "startup" && src !== "clear") process.exit(0);
 
   try {
@@ -44,7 +56,7 @@ readStdin((input) => {
     if (fresh(manual)) {
       const txt = fs.readFileSync(manual, "utf8").trim().slice(0, 6000);
       if (txt) {
-        process.stdout.write("[token-saver] Handoff from the previous session. Continue from it, but verify the current state of files before editing:\n" + txt + "\n");
+        out("[token-saver] Handoff from the previous session. Continue from it, but verify the current state of files before editing:\n" + txt + "\n");
         archive(manual);
         if (fs.existsSync(auto)) archive(auto);
         process.exit(0);
@@ -52,7 +64,7 @@ readStdin((input) => {
     }
     if (cfg.autoHandoff && fresh(auto)) {
       const txt = fs.readFileSync(auto, "utf8").trim();
-      if (txt) { process.stdout.write(txt + "\n"); archive(auto); }
+      if (txt) { out(txt + "\n"); archive(auto); }
     }
   } catch {}
   process.exit(0);

@@ -126,9 +126,33 @@ check(st.status === 0 && /Bloqueos: 1 en total/.test(st.stdout) && /tree/.test(s
 const au = spawnSync(process.execPath, [path.join(H, "audit.js")], { cwd, env, encoding: "utf8" });
 check(au.status === 0 && /MCP servers/.test(au.stdout), "audit.js runs");
 
+// 5c) bash-trim (PostToolUse): noisy + big -> trimmed, full output saved, shape kept; everything else untouched
+const lines = []; for (let i = 0; i < 3000; i++) lines.push(i === 1500 ? "ERROR: fallo critico en modulo X" : `linea ${i} de salida normal del build`);
+const bigOut = lines.join("\n");
+const sp2 = path.join(sandbox, "scratch"); fs.mkdirSync(sp2);
+const post = (cmd, resp, extra = {}, envx = {}) => run("post.js", { tool_name: "Bash", tool_input: { command: cmd }, tool_response: resp, tool_use_id: "toolu_t1", cwd, scratchpad_dir: sp2, ...extra }, envx);
+const base = { stdout: bigOut, stderr: "", interrupted: false, isImage: false };
+const pr = post("npm run build", base);
+let upd = null; try { upd = JSON.parse(pr.stdout).hookSpecificOutput.updatedToolOutput; } catch {}
+check(upd && upd.stdout.length < bigOut.length / 3 && /ERROR: fallo critico/.test(upd.stdout) && /linea 0 /.test(upd.stdout) && /linea 2999 /.test(upd.stdout), "bash-trim: trims big noisy output, keeps head/tail/errors");
+check(upd && upd.interrupted === false && upd.isImage === false && upd.stderr === "", "bash-trim: output shape preserved");
+check(fs.existsSync(path.join(sp2, "out-toolu_t1.txt")) && fs.readFileSync(path.join(sp2, "out-toolu_t1.txt"), "utf8").includes("linea 1499 "), "bash-trim: full output saved to file");
+check(post("cat src/index.js", base).stdout === "", "bash-trim: ignores non-noisy commands (cat/grep/diff)");
+check(post("npm run build", { ...base, stdout: "ok\n" }).stdout === "", "bash-trim: small output untouched");
+check(post("npm run build # ts-full", base).stdout === "", "bash-trim: # ts-full skips");
+check(post("npm run build", { ...base, interrupted: true }).stdout === "", "bash-trim: interrupted output untouched");
+check(post("npm run build", base, {}, { TOKEN_SAVER_OFF: "1" }).stdout === "", "bash-trim: TOKEN_SAVER_OFF respected");
+
+// 5d) stale resume warning (user-only message)
+const rw = run("session.js", { source: "resume", cwd, session_id: "rw1", context_tokens: 182000, prompt_cache_likely_expired: true, estimated_cache_write_usd: 1.14 });
+let rwm = ""; try { rwm = JSON.parse(rw.stdout).systemMessage || ""; } catch {}
+check(/182k/.test(rwm) && /\$1\.14/.test(rwm), "resume: warns on big stale session");
+check(run("session.js", { source: "resume", cwd, session_id: "rw2", context_tokens: 182000, prompt_cache_likely_expired: false }).stdout === "", "resume: silent when cache is still warm");
+check(run("session.js", { source: "resume", cwd, session_id: "rw3", context_tokens: 5000, prompt_cache_likely_expired: true }).stdout === "", "resume: silent for small sessions");
+
 // 6) environment
 console.log(`\nnode ${process.version} on ${process.platform}`);
-for (const x of ["hooks.json", "guard.js", "session.js", "autohandoff.js", "nudge.js", "lib.js", "space.js", "stats.js", "audit.js"]) check(fs.existsSync(path.join(H, x)), `file ${x}`);
+for (const x of ["hooks.json", "guard.js", "session.js", "autohandoff.js", "nudge.js", "lib.js", "space.js", "stats.js", "audit.js", "post.js"]) check(fs.existsSync(path.join(H, x)), `file ${x}`);
 try { JSON.parse(fs.readFileSync(path.join(H, "hooks.json"), "utf8")); check(true, "hooks.json is valid JSON"); } catch { check(false, "hooks.json is valid JSON"); }
 for (const x of [path.join(os.homedir(), ".claude", "token-saver.json"), path.join(process.cwd(), ".claude", "token-saver.json")])
   if (fs.existsSync(x)) console.log("info config found: " + x);
