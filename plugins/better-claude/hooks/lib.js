@@ -9,8 +9,9 @@ const ARR = ["disable", "allowCommands", "extraNoisy", "trimCommands"];
 // { "disable": ["tree"], "allowCommands": ["^pm2 logs blockhost"], "extraNoisy": ["/generated/"],
 //   "autoHandoff": true, "warnTranscriptKB": 1500 }
 function loadConfig(cwd) {
-  const cfg = { disable: [], allowCommands: [], extraNoisy: [], autoHandoff: true, warnTranscriptKB: 1500, catBigKB: 300, trimBashKB: 12, resumeWarnTokens: 60000, trimCommands: [] };
+  const cfg = { disable: [], allowCommands: [], extraNoisy: [], autoHandoff: true, warnTranscriptKB: 1500, catBigKB: 300, trimBashKB: 12, resumeWarnTokens: 60000, trimCommands: [], dupWindow: 10, handoffMaxChars: 2000, imgWindow: 25, imgMaxEdge: 0 };
   if (process.env.BETTER_CLAUDE_WARN_KB) cfg.warnTranscriptKB = Number(process.env.BETTER_CLAUDE_WARN_KB) || cfg.warnTranscriptKB;
+  if (process.env.BETTER_CLAUDE_IMG_MAX_EDGE) cfg.imgMaxEdge = Number(process.env.BETTER_CLAUDE_IMG_MAX_EDGE) || 0;
   if (process.env.BETTER_CLAUDE_NO_CONFIG === "1") return cfg;
   const files = [path.join(os.homedir(), ".claude", "better-claude.json"), path.join(cwd || process.cwd(), ".claude", "better-claude.json")];
   for (const f of files) {
@@ -22,6 +23,10 @@ function loadConfig(cwd) {
       if (Number(j.catBigKB) > 0) cfg.catBigKB = Number(j.catBigKB);
       if (Number(j.trimBashKB) > 0) cfg.trimBashKB = Number(j.trimBashKB);
       if (Number(j.resumeWarnTokens) > 0) cfg.resumeWarnTokens = Number(j.resumeWarnTokens);
+      if (Number(j.dupWindow) > 0) cfg.dupWindow = Math.min(50, Number(j.dupWindow));
+      if (Number(j.handoffMaxChars) > 0) cfg.handoffMaxChars = Number(j.handoffMaxChars);
+      if (Number(j.imgWindow) > 0) cfg.imgWindow = Math.min(100, Number(j.imgWindow));
+      if (Number(j.imgMaxEdge) >= 0 && j.imgMaxEdge !== undefined) cfg.imgMaxEdge = Number(j.imgMaxEdge) || 0;
     } catch {}
   }
   return cfg;

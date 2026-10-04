@@ -33,7 +33,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash|Read",
+        "matcher": "Bash|Read|mcp__.*[Bb]lender.*",
         "hooks": [
           {
             "type": "command",

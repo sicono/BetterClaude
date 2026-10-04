@@ -1,5 +1,6 @@
 ---
-description: Report disk space used by Claude Code (transcripts, caches) and how to reduce it; deletes nothing
+description: Report ~/.claude disk usage (deletes nothing)
+disable-model-invocation: true
 allowed-tools: Bash(node:*), Glob
 ---
 Run: `node "${CLAUDE_PLUGIN_ROOT}/hooks/space.js"`. If `${CLAUDE_PLUGIN_ROOT}` is not expanded, locate `better-claude/hooks/space.js` under the user's `.claude/plugins` folder (Glob) and run that path with node.

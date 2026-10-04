@@ -5,7 +5,7 @@
     {
       "name": "better-claude",
       "source": "./plugins/better-claude",
-      "description": "Ahorro de tokens sin perder calidad: bloquea logs infinitos, lecturas de archivos generados y cat de archivos enormes; handoff automatico; informe de espacio."
+      "description": "Ahorro de tokens sin perder calidad: bloquea logs infinitos, lecturas de archivos generados y cat de archivos enormes; capturas de Blender e imagenes repetidas; handoff automatico; informe de espacio."
     }
   ]
 }

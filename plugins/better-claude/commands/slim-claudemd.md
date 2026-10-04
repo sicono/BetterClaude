@@ -1,5 +1,6 @@
 ---
-description: Propose a slimmer CLAUDE.md (never overwrites it) to cut tokens loaded every turn
+description: Propose a slimmer CLAUDE.md (never overwrites)
+disable-model-invocation: true
 allowed-tools: Read, Glob, Write(CLAUDE.slim.md)
 ---
 Read the project's `CLAUDE.md` and write a proposal to `CLAUDE.slim.md`. Do NOT modify `CLAUDE.md`.

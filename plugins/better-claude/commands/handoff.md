@@ -1,5 +1,6 @@
 ---
-description: Save a compact handoff to .claude/handoff.md; after /clear it loads automatically, once
+description: Write a compact handoff for the next session
+disable-model-invocation: true
 allowed-tools: Write(.claude/handoff.md)
 ---
 Write a handoff of this session to `.claude/handoff.md` (create the folder if needed), max 15 lines, in the user's language:

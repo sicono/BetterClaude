@@ -19,6 +19,10 @@ readStdin((input) => {
     if (input.session_id) fs.rmSync(path.join(d, safeId(input.session_id) + ".json"), { force: true });
     for (const f of fs.readdirSync(d)) {
       const p = path.join(d, f);
+      if (fs.statSync(p).isDirectory()) { // downscaled image copies live in a subfolder: prune them one by one
+        for (const g of fs.readdirSync(p)) { const q = path.join(p, g); if (Date.now() - fs.statSync(q).mtimeMs > 3 * DAY) fs.rmSync(q, { force: true }); }
+        continue;
+      }
       if (Date.now() - fs.statSync(p).mtimeMs > 3 * DAY) fs.rmSync(p, { force: true });
     }
   } catch {}

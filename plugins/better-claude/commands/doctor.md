@@ -1,5 +1,6 @@
 ---
-description: Self-test better-claude (rules, Node, files) and report if it is working
+description: Self-test better-claude
+disable-model-invocation: true
 allowed-tools: Bash(node:*), Glob
 ---
 Run the self-test: `node "${CLAUDE_PLUGIN_ROOT}/hooks/selftest.js"`. If `${CLAUDE_PLUGIN_ROOT}` is not expanded, locate `better-claude/hooks/selftest.js` under the user's `.claude/plugins` folder (Glob) and run that path with node.

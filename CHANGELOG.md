@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.3.0 - 2026-10-04
+- Imágenes: regla `dup-image`, que bloquea (una vez) releer una imagen sin cambios que ya está en el contexto. Antes las imágenes pasaban por el anti re-lectura de texto y no se controlaban bien. Nueva opción `imgWindow`.
+- Blender (MCP): regla `blender-shot`, que bloquea (una vez) repetir la misma captura del viewport si la escena no ha cambiado desde la anterior. El matcher de `PreToolUse` ahora incluye `mcp__*blender*`.
+- Blender (terminal): `blender ...` entra en la limpieza de salida; los avisos de progreso del render se colapsan a la última línea de cada tanda y se conservan avisos, errores y `Saved:`. El patrón va anclado al inicio del comando: `grep blender x` no se toca.
+- Opcional y apagado: `imgMaxEdge` reduce imágenes grandes antes de enviarlas (regla `img-fit`). Pierde detalle, así que no actúa por defecto. Nuevo `img.js` (dimensiones sin dependencias para PNG, JPEG, GIF y WebP; reescalado con `magick`, `convert`, `sips` o Python+Pillow).
+- `session.js` limpia también las copias reducidas (subcarpeta `img`).
+- `/better-claude:stats` cuenta tokens de imagen evitados (aproximado).
+- El autotest pasa de 139 a 170 comprobaciones.
+
+## 2.2.0 - 2026-10-04
+- Omisión de diffs de archivos generados en `git diff`, `git show`, `git log -p` y `git stash show`: lockfiles, `*.min.*` y `*.map` (más tus `extraNoisy`) se reducen a una línea con el recuento de líneas. El diff de código no se toca, el texto posterior (por ejemplo la cabecera del siguiente commit) se conserva y la salida completa se guarda en un archivo. Con un `package-lock.json` real, 66 KB pasaron a 342 caracteres. Regla `diff-omit`.
+- Reglas nuevas: `cat-binary` (cat de zip, db, imágenes, pdf, etc.) y `ls-noise` (`ls`/`find` sobre `node_modules` entero).
+- `/better-claude:audit` avisa si CLAUDE.md pasa de 200 líneas. `/better-claude:stats` cuenta los diffs omitidos.
+- El autotest pasa de 122 a 139 comprobaciones.
+
+## 2.1.0 - 2026-10-04
+- Los seis comandos llevan `disable-model-invocation: true` y descripciones más cortas: son solo para el usuario, así que ya no ocupan contexto en cada sesión.
+- Anti re-lectura por rangos: también bloquea leer un rango contenido en una lectura anterior (ej. las líneas 10-30 tras leer el archivo entero). Las lecturas sin `limit` de archivos de más de 80 KB no se registran, porque pudieron fallar por tamaño. Nueva opción `dupWindow`.
+- Los comandos que no terminan (`tail -f`, `pm2 logs`, `docker logs -f`...) ya no se libran por ir con `| head` o `| grep`. Se permiten con `timeout N`.
+- Reglas nuevas: `kubectl logs` (con y sin `-f`), `adb logcat`, `ping` sin `-c`, `git log` sin límite y `npm/pnpm/yarn ls` completo.
+- Limpieza sin pérdida de la salida de comandos ruidosos: quita colores ANSI y barras de progreso y colapsa líneas idénticas repetidas, incluso por debajo de 12 KB. Más comandos reconocidos (terraform, poetry, uv, next/vite build, cmake, cypress, rspec...).
+- Handoff automático más compacto (tope `handoffMaxChars`, 2000 por defecto) y con lo más útil primero. Corrige que se descartaran peticiones del usuario que empezaban por `<`.
+- `/better-claude:audit` mide también `@imports` de CLAUDE.md, `.claude/rules`, memoria automática y las descripciones de cada plugin activo, y no cuenta los comandos y skills con `disable-model-invocation`.
+- `/better-claude:stats` muestra el texto evitado en relecturas y `cat` enormes, y separa las limpiezas sin recorte.
+- El autotest pasa de 81 a 122 comprobaciones.
+
 ## 2.0.0 - 2026-10-04
 - El plugin pasa a llamarse **BetterClaude** (`better-claude`), antes `token-saver`.
 - Cambios que rompen compatibilidad: los comandos son ahora `/better-claude:...`, la configuración es `~/.claude/better-claude.json` y `.claude/better-claude.json`, el log es `~/.claude/better-claude.log`, los datos están en `~/.claude/better-claude/` y las variables de entorno empiezan por `BETTER_CLAUDE_` (por ejemplo `BETTER_CLAUDE_OFF=1`).

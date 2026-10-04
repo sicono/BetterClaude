@@ -1,6 +1,6 @@
 # BetterClaude
 
-![version](https://img.shields.io/badge/version-2.0.0-blue)
+![version](https://img.shields.io/badge/version-2.3.0-blue)
 
 Plugin para Claude Code que reduce el consumo de tokens sin cambiar lo que Claude puede hacer. Funciona solo, con hooks: una vez instalado no hace falta ejecutar nada.
 
@@ -12,13 +12,20 @@ Es independiente del modelo (los hooks los ejecuta Claude Code, no el modelo) y 
 
 | Función | Cuándo actúa | Efecto |
 |---|---|---|
-| Guardas de Bash y Read | Cada llamada | Bloquea lo que no aporta información: `pm2 logs`, `tail -f`, `journalctl` o `docker logs` sin límite, `top`, `watch`, `find .`, `grep -r .`, `tree`, `ls -R` sobre la raíz, `cat` de lockfiles, `git log -p` sin límite y lecturas completas de `node_modules`, `dist`, lockfiles, `*.min.*` y `*.map`. Claude recibe la alternativa acotada. |
+| Guardas de Bash y Read | Cada llamada | Bloquea lo que no aporta información: `pm2 logs`, `tail -f`, `journalctl`, `docker logs` o `kubectl logs` sin límite, `adb logcat`, `ping` sin `-c`, `top`, `watch`, `find .`, `grep -r .`, `tree`, `ls -R` sobre la raíz, `cat` de lockfiles y de archivos binarios, `ls`/`find` sobre `node_modules` entero, `git log` sin límite, `npm ls` completo y lecturas completas de `node_modules`, `dist`, lockfiles, `*.min.*` y `*.map`. Claude recibe la alternativa acotada. Los comandos que no terminan se bloquean aunque vayan con `\| head` o `\| grep`; se permiten con `timeout N`. |
 | `cat` de archivos enormes | Cada Bash | Bloquea `cat`, `bat` o `type` sobre archivos de más de 300 KB. No actúa con `\| head`, redirecciones ni archivos que no existen. |
-| Anti re-lectura | Cada Read | Bloquea releer el mismo archivo y rango, sin cambios, en las últimas 10 llamadas. Se reinicia tras `/compact`, `/clear` o al reanudar. |
-| Recorte de salida ruidosa | Tras cada Bash | Si `npm install/build/test`, `pip install`, `docker build`, `pytest`, `make`, `git clone` y similares imprimen más de 12 KB, Claude ve el principio, el final y las líneas de error y warning del medio. La salida completa se guarda en un archivo cuya ruta se le indica. Requiere Claude Code 2.1.236 o superior. |
-| Handoff automático | Al cerrar y abrir sesión | Extrae del transcript (sin modelo) la primera petición, las últimas, los archivos editados y el último mensaje de Claude. Se guarda en `~/.claude/better-claude/handoffs` y se inyecta una sola vez en `startup` y `clear`. Caduca a las 24 h. |
+| Anti re-lectura | Cada Read | Bloquea releer un rango que ya está en el contexto: el mismo, o uno contenido en una lectura anterior (por ejemplo, las líneas 10-30 tras leer el archivo entero), si el archivo no cambió y fue en las últimas 10 llamadas. Una lectura sin `limit` de un archivo de más de 80 KB no se registra, porque pudo fallar por tamaño. Se reinicia tras `/compact`, `/clear` o al reanudar. |
+| Anti re-lectura de imágenes | Cada Read de `.png/.jpg/.gif/.webp` | Bloquea (una vez) volver a abrir una imagen que ya está en el contexto y no ha cambiado (misma ruta, fecha y tamaño), dentro de las últimas 25 llamadas (`imgWindow`). Una captura o render regenerado tiene otra fecha y pasa. Si repites la lectura, pasa. Se reinicia tras `/compact`, `/clear` o al reanudar. |
+| Capturas de Blender repetidas | Cada llamada al MCP de Blender | Bloquea (una vez) `get_viewport_screenshot` con los mismos argumentos si desde la última captura no ha habido ninguna llamada que cambie la escena (`execute_blender_code`, importaciones...). Los `get_*`/`list_*` no cuentan como cambio. Funciona con cualquier servidor MCP cuyo nombre contenga `blender`. |
+| Salida de `blender` por terminal | Tras `blender ...` | Colapsa los avisos de progreso del render (`Fra:1 Mem:... Sample 12/128`) a la última línea de cada tanda; mantiene `Warning:`, `Error:`, `Saved:`, cabecera y trazas. Si aun así pasa de 12 KB, recorta como el resto de builds y guarda la salida completa. |
+| Reducir imágenes (opcional, apagado) | Cada Read de imagen | Con `imgMaxEdge` > 0, las imágenes con el lado largo mayor se sustituyen por una copia reducida (mantiene proporción y orientación EXIF; el original no se toca; si pides el original, pasa). Usa `magick`, `convert`, `sips` o Python+Pillow, lo que haya; si no hay ninguno, no hace nada. **Esto sí pierde detalle**, por eso viene apagado. |
+| Recorte de salida ruidosa | Tras cada Bash | Si `npm install/build/test`, `pip install`, `docker build`, `pytest`, `make`, `git clone`, `terraform`, `poetry`, `next build` y similares imprimen más de 12 KB, Claude ve el principio, el final y las líneas de error y warning del medio. La salida completa se guarda en un archivo cuya ruta se le indica. Requiere Claude Code 2.1.236 o superior. |
+| Diffs de lockfiles | Tras `git diff`, `show`, `log -p`, `stash show` | El diff de `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `go.sum`, `*.min.*`, `*.map` (y de tus rutas `extraNoisy`) se sustituye por una línea con las líneas añadidas y quitadas. El diff del resto de archivos queda intacto, y la salida completa se guarda en un archivo. Solo actúa si el diff de ese archivo pasa de 1,5 KB. |
+| Limpieza sin pérdida | Tras cada Bash ruidoso | Antes de recortar, quita colores ANSI, barras de progreso (`\r`) y colapsa 3 o más líneas idénticas seguidas en una con su contador. Actúa aunque la salida no llegue a 12 KB, si ahorra al menos 1 KB. No elimina contenido. |
+| Handoff automático | Al cerrar y abrir sesión | Extrae del transcript (sin modelo) la primera petición, las últimas, el último mensaje de Claude y los archivos editados, con un tope de 2000 caracteres (`handoffMaxChars`). Se guarda en `~/.claude/better-claude/handoffs` y se inyecta una sola vez en `startup` y `clear`. Caduca a las 24 h. |
 | Aviso de sesión larga | Al enviar un prompt | Mensaje solo para el usuario (no gasta tokens) cuando el transcript supera ~1,5 MB: `/clear` si cambias de tarea, `/compact` si sigues con la misma. |
 | Aviso al reanudar | Al reanudar | Si la sesión tiene más de 60k tokens y la caché del prompt caducó, avisa del coste de reenviarla. Requiere Claude Code 2.1.251 o superior. |
+| Comandos sin coste fijo | Siempre | Los seis comandos llevan `disable-model-invocation: true`: solo los lanzas tú, así que su descripción no se carga en el contexto de cada sesión. |
 | Limpieza propia | Al abrir sesión | Borra handoffs usados (más de 7 días) y caducados (más de 30). |
 
 Los archivos de código se leen siempre enteros.
@@ -44,8 +51,8 @@ Son opcionales.
 
 | Comando | Descripción |
 |---|---|
-| `/better-claude:audit` | Mide lo que se carga en cada sesión: CLAUDE.md, MCP, plugins, skills. |
-| `/better-claude:stats` | Bloqueos por regla y texto recortado de las salidas (`~/.claude/better-claude.log`). |
+| `/better-claude:audit` | Mide lo que se carga en cada sesión: CLAUDE.md con sus `@imports` (y avisa si pasa de 200 líneas), `.claude/rules` sin `paths`, memoria automática, descripciones de skills, agentes y comandos (propios y de cada plugin activo, por separado), y servidores MCP. |
+| `/better-claude:stats` | Bloqueos por regla, texto recortado de las salidas y texto evitado en relecturas y `cat` enormes (`~/.claude/better-claude.log`). |
 | `/better-claude:clean` | Espacio que ocupa `~/.claude` (transcripciones, cachés). Solo informa, no borra. |
 | `/better-claude:doctor` | Autotest. |
 | `/better-claude:handoff` | Handoff manual redactado por Claude. Tiene prioridad sobre el automático. |
@@ -65,11 +72,19 @@ Archivo `~/.claude/better-claude.json` (global) y/o `.claude/better-claude.json`
   "catBigKB": 300,
   "trimBashKB": 12,
   "trimCommands": ["^terraform "],
-  "resumeWarnTokens": 60000
+  "resumeWarnTokens": 60000,
+  "dupWindow": 10,
+  "handoffMaxChars": 2000,
+  "imgWindow": 25,
+  "imgMaxEdge": 0
 }
 ```
 
-Reglas que se pueden desactivar con `disable`: `interactive`, `pm2-logs`, `journalctl-follow`, `journalctl-unbounded`, `docker-follow`, `docker-unbounded`, `tail-follow`, `grep-root`, `find-root`, `tree`, `ls-recursive`, `cat-noise`, `cat-big`, `git-log-patch`, `read-noise`, `dup-read`, `bash-trim`.
+Reglas que se pueden desactivar con `disable`: `interactive`, `pm2-logs`, `journalctl-follow`, `journalctl-unbounded`, `docker-follow`, `docker-unbounded`, `kubectl-follow`, `kubectl-unbounded`, `tail-follow`, `ping`, `logcat`, `grep-root`, `find-root`, `tree`, `ls-recursive`, `cat-noise`, `cat-big`, `git-log-patch`, `git-log-unbounded`, `npm-ls`, `cat-binary`, `ls-noise`, `read-noise`, `dup-read`, `dup-image`, `img-fit`, `blender-shot`, `diff-omit`, `bash-trim` (también desactiva la limpieza sin pérdida).
+
+`dupWindow` son las llamadas durante las que una lectura cuenta como "aún en contexto" (máximo 50). Súbelo en sesiones cortas con mucho contexto; bájalo si notas que Claude pierde el hilo de lo leído.
+
+`imgWindow` son las llamadas durante las que una imagen cuenta como "aún en contexto" (máximo 100). `imgMaxEdge` es el lado largo máximo en píxeles (0 = apagado); también se puede probar con `BETTER_CLAUDE_IMG_MAX_EDGE=1000`.
 
 Atajos:
 
@@ -80,7 +95,10 @@ Atajos:
 ## Notas
 
 - Si un modelo repite tres veces la misma llamada bloqueada por una regla de límites (no las que cuelgan la shell), la tercera pasa. Así no se queda atrapado en reintentos.
-- El recorte de salida solo actúa sobre comandos de build, instalación y tests, y guarda siempre la salida completa. No toca `cat`, `grep`, `git diff` ni la lectura de código.
+- Las descripciones de los comandos solo dejan de cargarse en versiones de Claude Code que respetan `disable-model-invocation` también para el listado de contexto. Compruébalo con `/context`.
+- El recorte de salida solo actúa sobre comandos de build, instalación y tests, y guarda siempre la salida completa. No toca `cat`, `grep` ni la lectura de código. De `git diff` solo se omite el diff de archivos generados, nunca el de código.
+- **Cómo cuestan las imágenes:** unos `ancho × alto / 750` tokens, y la API reduce el lado largo a 1568 px *antes* de contar. Una imagen de 4000×3000 cuesta lo mismo que una de 1568×1176, así que reescalar por encima de 1568 no ahorra tokens (solo bytes). Lo que ahorra sin perder calidad es no enviar la misma imagen dos veces, no pedir capturas que no han cambiado y, en Blender, preguntar por números con un `execute_blender_code` que los imprima cuando no hace falta ver nada. Bajar de 1568 px (`imgMaxEdge`) sí recorta tokens, pero pierde detalle.
+- La copia reducida se guarda en la carpeta temporal de la sesión; si Claude Code pide permiso para leerla, es porque está fuera del proyecto.
 - No cambia el modelo, el razonamiento ni el estilo, y no delega en modelos más baratos.
 
 ## Estructura
