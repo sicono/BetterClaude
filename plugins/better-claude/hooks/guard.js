@@ -12,7 +12,7 @@
 // Disable all: BETTER_CLAUDE_OFF=1 | one Bash call: "# ts-allow" | per-rule/project: .claude/better-claude.json
 const fs = require("fs");
 const path = require("path");
-const { loadConfig, tmpDir, safeId, readStdin, logEvent, BLENDER_CMD } = require("./lib.js");
+const { loadConfig, tmpDir, safeId, readStdin, logEvent, blenderRuns } = require("./lib.js");
 const { isImage, dims, estTokens, fit } = require("./img.js");
 
 if (process.env.BETTER_CLAUDE_OFF === "1") process.exit(0);
@@ -39,7 +39,7 @@ const BASH_RULES = [
     return /^\s*(?:sudo\s+)?(top|htop|btop|watch|nano|vim?|less|more)(\s|$)/.test(c) || /\bpm2\s+monit\b/.test(c)
       ? "Interactive/never-ending program hangs the shell tool. Use a non-interactive form (e.g. top -b -n 1, or Read)." : null;
   }],
-  ["blender-gui", (c) => BLENDER_CMD.test(c) && !/(^|\s)(-b|--background|-h|--help|-v|--version)(\s|$)/.test(c)
+  ["blender-gui", (c) => blenderRuns(c).some((args) => !args.some((w) => /^(-b|--background|-h|--help|-v|--version)$/.test(w)))
     ? "`blender` without -b opens the GUI and never returns, which hangs the shell. Run it headless: blender -b file.blend --python script.py (add -noaudio). To inspect a scene, print data from a --python script instead of opening it." : null],
   ["pm2-logs", (c) => /\bpm2\s+logs\b/.test(c) && !/--nostream/.test(c)
     ? "`pm2 logs` streams forever. Use: pm2 logs <app> --nostream --lines 200" : null],

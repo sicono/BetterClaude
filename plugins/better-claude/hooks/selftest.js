@@ -43,6 +43,14 @@ const cases = [
   ["Bash", "git log | head -n 20", 0], ["Bash", "journalctl -u nginx | tail -n 50", 0],
   ["Bash", "blender scene.blend", 2], ["Bash", "blender -b scene.blend --python x.py", 0], ["Bash", "blender --version", 0], ["Bash", "timeout 60 blender scene.blend", 0],
   ["Bash", "blender scene.blend # ts-allow", 0], ["Bash", "grep blender notes.txt", 0], ["Bash", "cd p && /opt/blender/blender x.blend | head -n 5", 2], ["Bash", "cat model.blend", 2], ["Bash", "cat render.exr", 2],
+  // blender named inside quotes is not blender being run (2.4.0 took the | inside the pattern for a pipe)
+  ["Bash", 'tasklist //FO CSV //NH | grep -iE "UnrealEditor|RouteMountainUE|blender" | head -3', 0], ["Bash", "echo 'a|blender b'", 0],
+  ["Bash", 'pgrep -f "blender "', 0], ["Bash", 'git commit -m "fix; blender x"', 0],
+  // the -b must be blender's own, and a quoted path with spaces is still blender
+  ["Bash", "ls -b; blender x.blend", 2], ["Bash", "blender x.blend && echo -b", 2],
+  ["Bash", '"/c/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b x.blend -P s.py', 0],
+  ["Bash", '"/c/Program Files/Blender Foundation/Blender 5.2/blender.exe" x.blend', 2],
+  ["Bash", '"C:\\Program Files\\Blender\\blender.exe" x.blend', 2], ["Bash", "sudo blender x.blend", 2], ["Bash", "FOO=1 blender -b x.blend", 0],
   ["Read", "/x/scene.blend", 2], ["Read", "/x/model.glb", 2], ["Read", "/x/pack.zip", 2], ["Read", "/x/notes.txt", 0],
   ["Read", "/x/node_modules/a/index.js", 2], ["Read", "/x/dist/app.min.js", 2],
   ["Read", "C:\\proj\\node_modules\\a\\i.js", 2], ["Read", "/x/src/server.js", 0],

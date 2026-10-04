@@ -1,6 +1,6 @@
 {
   "name": "better-claude",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Autonomous, quality-first token savings: command/read guards, range-aware duplicate-read guard, lossless output cleanup, image/Blender-screenshot de-duplication, Blender render-log cleanup, lockfile-diff omission + noisy build/test trimming (full output kept on disk), compact automatic handoff across /clear, long-session nudge, zero-cost commands, deep audit, self-cleaning. No commands needed.",
   "author": {
     "name": "BlockHost"

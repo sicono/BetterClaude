@@ -24,7 +24,6 @@ const NOISY = new RegExp([
   "\\bflutter\\s+(build|pub|test)\\b", "\\bswift\\s+(build|test)\\b", "\\bng\\s+(build|test)\\b",
   "\\b(next|vite|nuxt|turbo|nx|webpack|rollup)\\s+build\\b", "\\bwebpack\\b", "\\b(terraform|tofu)\\s+(init|plan|apply)\\b",
   "\\bansible(-playbook)?\\b",
-  BLENDER_CMD.source,
 ].join("|"));
 const KEEP = /error|fail|exception|traceback|panic|fatal|denied|cannot|not found|warn|✗|×/i;
 const cut = (l, n) => (l.length > n ? l.slice(0, n) + "…" : l);
@@ -146,7 +145,7 @@ readStdin((input) => {
 
     // 2) noisy build/install/test commands
     if (cfg.disable.includes("bash-trim")) process.exit(0);
-    let noisy = NOISY.test(cmd);
+    let noisy = NOISY.test(cmd) || BLENDER_CMD.test(cmd);
     if (!noisy) for (const re of cfg.trimCommands) { try { if (new RegExp(re).test(cmd)) noisy = true; } catch {} }
     if (!noisy) process.exit(0);
 

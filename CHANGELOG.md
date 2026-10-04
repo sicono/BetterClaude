@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.1 - 2026-10-04
+- `blender-gui` ya no salta cuando `blender` solo aparece como texto: el comando se parte en tramos por `;`, `&`, `|`, `(` y saltos de línea **fuera de comillas**, y solo cuenta el programa que ejecuta cada tramo (tras `VAR=…`, `sudo`, `env`, `timeout N`, `xvfb-run`…). Antes, `tasklist | grep -iE "UnrealEditor|blender"` se bloqueaba: el `|` del patrón de grep se tomaba por una tubería (y lo mismo un mensaje de commit o un `echo` que nombraran blender tras un `;` o un `|`).
+- El `-b`/`--background` se busca en los argumentos del propio Blender, no en toda la línea: con un `-b` de otro programa en la misma línea ya no pasa.
+- La limpieza de salida de Blender (`post.js`) usa la misma detección (`blenderRuns` en `lib.js`).
+- El autotest pasa de 184 a 195 comprobaciones.
+
 ## 2.4.0 - 2026-10-04
 - Regla `blender-gui`: bloquea `blender` sin `-b`/`--background` (abre la interfaz y cuelga la shell). Es una regla de las que no terminan: solo pasa con `timeout N` o `# ts-allow`.
 - Regla `read-binary`: bloquea Read de `.blend`, `.glb`, `.fbx`, `.exr`, `.hdr`, `.psd`, `.usdc`, `.abc`, archivos comprimidos, ejecutables y bases de datos, aunque lleven `limit`. `cat-binary` cubre ahora también esas extensiones y `.bmp`/`.tiff`.

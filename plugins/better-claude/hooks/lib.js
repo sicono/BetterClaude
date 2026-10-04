@@ -67,8 +67,56 @@ function logEvent(o) {
   } catch {}
 }
 
-// `blender ...` at the START of a command (also after && ; | ( , behind sudo/xvfb-run, with a quoted path that has spaces).
-// Anchored on purpose: `grep blender notes.txt` must never be trimmed.
-const BLENDER_CMD = /(^|[;&|(]\s*)(sudo\s+)?(xvfb-run\s+(-\S+\s+)*)?("[^"]*[\/\\]|'[^']*[\/\\]|["']|\S*[\/\\])?blender(\.exe)?["']?\s/;
+// A command line split into its simple commands at the ; & | ( ) and newlines that are NOT inside quotes, each one as
+// its words with the quotes taken off. (A regex over the raw line took the | inside `grep -E "a|blender"` for a pipe.)
+function simpleCommands(cmd) {
+  const cmds = [];
+  let words = [], word = "", has = false, q = null;
+  const endWord = () => { if (has) words.push(word); word = ""; has = false; };
+  const endCmd = () => { endWord(); if (words.length) cmds.push(words); words = []; };
+  for (let i = 0; i < cmd.length; i++) {
+    const ch = cmd[i];
+    if (q === "'") { if (ch === "'") q = null; else word += ch; continue; }
+    if (q === '"') {
+      if (ch === '"') q = null;
+      else if (ch === "\\" && (cmd[i + 1] === '"' || cmd[i + 1] === "\\")) word += cmd[++i];
+      else word += ch;                                   // a Windows path keeps its backslashes
+      continue;
+    }
+    if (ch === "'" || ch === '"') { q = ch; has = true; continue; }
+    if (ch === "#" && !has) { endCmd(); break; }       // a comment to the end of the line
+    if (ch === "\\" && i + 1 < cmd.length) { word += cmd[++i]; has = true; continue; }
+    if (";&|()\n".includes(ch)) { endCmd(); continue; }
+    if (/\s/.test(ch)) { endWord(); continue; }
+    word += ch; has = true;
+  }
+  endCmd();
+  return cmds;
+}
 
-module.exports = { BLENDER_CMD, loadConfig, tmpDir, dataDir, safeId, cwdKey, readStdin, out, logEvent };
+// The program a simple command runs: past VAR=value, sudo/env/nice/nohup/time/exec/command, `timeout [opts] N` and
+// `xvfb-run [opts]`. Returns [its name in lower case without the path, its arguments].
+const WRAPPERS = new Set(["sudo", "env", "nice", "nohup", "time", "exec", "command"]);
+function program(words) {
+  let i = 0;
+  for (;;) {
+    while (i < words.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(words[i])) i++;
+    if (WRAPPERS.has(words[i])) { i++; while (i < words.length && words[i].startsWith("-")) i++; continue; }
+    if (words[i] === "timeout") { i++; while (i < words.length && words[i].startsWith("-")) i++; i++; continue; }
+    if (words[i] === "xvfb-run") { i++; while (i < words.length && words[i].startsWith("-")) i++; continue; }
+    break;
+  }
+  const name = (words[i] || "").split(/[\\/]/).pop().toLowerCase();
+  return [name, words.slice(i + 1)];
+}
+
+// The Blender runs of a command line: the argument lists of every simple command whose program is blender(.exe).
+// `grep blender notes.txt`, `echo "x|blender y"` or a pattern naming it are not Blender.
+function blenderRuns(cmd) {
+  return simpleCommands(cmd).map(program).filter(([name]) => name === "blender" || name === "blender.exe").map(([, args]) => args);
+}
+
+// Kept for the noisy-command list and old callers: .test(cmd) means "runs Blender".
+const BLENDER_CMD = { test: (cmd) => blenderRuns(cmd).length > 0 };
+
+module.exports = { BLENDER_CMD, blenderRuns, simpleCommands, loadConfig, tmpDir, dataDir, safeId, cwdKey, readStdin, out, logEvent };
