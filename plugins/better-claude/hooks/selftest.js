@@ -39,6 +39,7 @@ const cases = [
   ["Bash", "npm ls", 2], ["Bash", "npm ls --depth=0", 0], ["Bash", "npm ls lodash", 0],
   ["Bash", "tail -f x | grep err", 2], ["Bash", "pm2 logs app | head -n 5", 2], ["Bash", "timeout 10 tail -f x", 0],
   ["Bash", "cat release.zip", 2], ["Bash", "cat app.db", 2], ["Bash", "cat release.zip | gunzip", 0], ["Bash", "cat notes.txt", 0],
+  ["Bash", "cat build.output; ls -la Builds/app.exe", 0], ["Bash", "cat \"C:/tmp/a b/shot.png\"", 2], ["Bash", "cat -A notes.txt; cat x.dll", 2],
   ["Bash", "ls node_modules", 2], ["Bash", "ls ./node_modules/", 2], ["Bash", "ls node_modules/lodash", 0], ["Bash", "find node_modules -name '*.d.ts'", 0], ["Bash", "ls node_modules | head -n 20", 0],
   ["Bash", "git log | head -n 20", 0], ["Bash", "journalctl -u nginx | tail -n 50", 0],
   ["Bash", "blender scene.blend", 2], ["Bash", "blender -b scene.blend --python x.py", 0], ["Bash", "blender --version", 0], ["Bash", "timeout 60 blender scene.blend", 0],

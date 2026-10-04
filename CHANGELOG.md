@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.4.2 - 2026-10-05
+- `cat-binary` mira solo los archivos que recibe el propio `cat`/`bat`/`type`, no toda la línea: `cat build.output; ls -la app.exe` se bloqueaba por el `.exe` del `ls`. Usa los tramos de `simpleCommands` (fuera de comillas) como `blender-gui`.
+
 ## 2.4.1 - 2026-10-04
 - `blender-gui` ya no salta cuando `blender` solo aparece como texto: el comando se parte en tramos por `;`, `&`, `|`, `(` y saltos de línea **fuera de comillas**, y solo cuenta el programa que ejecuta cada tramo (tras `VAR=…`, `sudo`, `env`, `timeout N`, `xvfb-run`…). Antes, `tasklist | grep -iE "UnrealEditor|blender"` se bloqueaba: el `|` del patrón de grep se tomaba por una tubería (y lo mismo un mensaje de commit o un `echo` que nombraran blender tras un `;` o un `|`).
 - El `-b`/`--background` se busca en los argumentos del propio Blender, no en toda la línea: con un `-b` de otro programa en la misma línea ya no pasa.

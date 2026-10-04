@@ -119,4 +119,4 @@ function blenderRuns(cmd) {
 // Kept for the noisy-command list and old callers: .test(cmd) means "runs Blender".
 const BLENDER_CMD = { test: (cmd) => blenderRuns(cmd).length > 0 };
 
-module.exports = { BLENDER_CMD, blenderRuns, simpleCommands, loadConfig, tmpDir, dataDir, safeId, cwdKey, readStdin, out, logEvent };
+module.exports = { BLENDER_CMD, blenderRuns, simpleCommands, program, loadConfig, tmpDir, dataDir, safeId, cwdKey, readStdin, out, logEvent };

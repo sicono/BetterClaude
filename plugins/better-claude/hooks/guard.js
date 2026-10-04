@@ -12,7 +12,7 @@
 // Disable all: BETTER_CLAUDE_OFF=1 | one Bash call: "# ts-allow" | per-rule/project: .claude/better-claude.json
 const fs = require("fs");
 const path = require("path");
-const { loadConfig, tmpDir, safeId, readStdin, logEvent, blenderRuns } = require("./lib.js");
+const { loadConfig, tmpDir, safeId, readStdin, logEvent, blenderRuns, simpleCommands, program } = require("./lib.js");
 const { isImage, dims, estTokens, fit } = require("./img.js");
 
 if (process.env.BETTER_CLAUDE_OFF === "1") process.exit(0);
@@ -97,7 +97,9 @@ const BASH_RULES = [
       : "Full dependency tree is huge. Use: " + m[1] + " ls --depth=0, or " + m[1] + " ls <package>";
   }],
   ["cat-binary", (c) => /^\s*(cat|bat|type)\s/.test(c) && !/[|<>]/.test(c)
-    && /\.(zip|tar|gz|tgz|bz2|xz|7z|rar|exe|dll|so|dylib|bin|o|a|class|jar|pyc|sqlite3?|db|woff2?|ttf|otf|ico|png|jpe?g|gif|webp|pdf|mp[34]|mov|wasm|parquet|blend1?|glb|fbx|exr|hdr|psd|usdc|abc|bmp|tiff?)(\s|$|[\"'])/i.test(c)
+    // Only the files cat itself is given: `cat build.log; ls -la app.exe` named an .exe in another command (2.4.2).
+    && simpleCommands(c).map(program).some(([name, args]) => ["cat", "bat", "type"].includes(name)
+      && args.some((a) => !a.startsWith("-") && CAT_BINARY.test(a)))
     ? "That is a binary file: cat prints unreadable bytes. Use `file <path>`, `unzip -l`/`tar -tf` for archives, or Read for images and PDFs." : null],
   ["ls-noise", (c) => {
     // Listing node_modules itself (thousands of entries). `ls node_modules/pkg` or a find with -name/-maxdepth is fine.
@@ -259,6 +261,7 @@ function checkBash(cmd, cfg, cwd) {
 // cat-big embeds the size in its message ("<file> is N KB.")
 function bytesOf(msg) { const m = / is (\d+) KB\./.exec(msg); return m ? Number(m[1]) * 1024 : 0; }
 
+const CAT_BINARY = /\.(zip|tar|gz|tgz|bz2|xz|7z|rar|exe|dll|so|dylib|bin|o|a|class|jar|pyc|sqlite3?|db|woff2?|ttf|otf|ico|png|jpe?g|gif|webp|pdf|mp[34]|mov|wasm|parquet|blend1?|glb|fbx|exr|hdr|psd|usdc|abc|bmp|tiff?)$/i;
 const BINARY_READ = /\.(blend1?|glb|fbx|exr|hdr|psd|usdc|abc|zip|tar|gz|tgz|bz2|xz|7z|rar|exe|dll|so|dylib|bin|o|a|class|jar|pyc|sqlite3?|db|woff2?|ttf|otf|wasm|parquet)$/i;
 function checkRead(ti, cfg) {
   const p = String(ti.file_path || "");
