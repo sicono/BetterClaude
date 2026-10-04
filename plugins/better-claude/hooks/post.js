@@ -6,9 +6,9 @@
 // Skip once: "# ts-full" at the end of the command. Disable: "bash-trim" in config. Threshold: trimBashKB (default 12).
 const fs = require("fs");
 const path = require("path");
-const { loadConfig, tmpDir, safeId, readStdin, out } = require("./lib.js");
+const { loadConfig, tmpDir, safeId, readStdin, out, logEvent } = require("./lib.js");
 
-if (process.env.TOKEN_SAVER_OFF === "1") process.exit(0);
+if (process.env.BETTER_CLAUDE_OFF === "1") process.exit(0);
 
 const NOISY = /\b(npm|pnpm|yarn|bun)\s+(i|install|ci|add|test|run|build|exec)\b|\bnpx\b|\bpip3?\s+install\b|\bdocker(\s+compose|-compose)?\s+(build|pull|up)\b|\b(pytest|jest|vitest|mocha|phpunit|playwright)\b|\bcomposer\s+(install|update|require)\b|\bcargo\s+(build|test|check|clippy)\b|\bgo\s+(build|test)\b|\b(mvn|gradle|gradlew)\b|\bmake\b|\bgit\s+(clone|pull|fetch)\b|\bapt(-get)?\s+(install|update|upgrade)\b|\bdotnet\s+(build|test|restore)\b/;
 const KEEP = /error|fail|exception|traceback|panic|fatal|denied|cannot|not found|warn|✗|×/i;
@@ -26,7 +26,7 @@ function trim(text, budget, file) {
   let mc = 0;
   for (let k = i; k <= j; k++) if (KEEP.test(lines[k])) { const l = cut(lines[k], 300); if (mc + l.length + 1 > mb) break; mid.push(l); mc += l.length + 1; }
   const omitted = Math.max(0, j - i + 1);
-  const note = `[token-saver] ${omitted} lines omitted (${Math.round(text.length / 1024)} KB total). Error/warning lines from the omitted part are kept below. Full output: ${file} — use grep -n "<pattern>" "<file>", or head/tail, to see more.`;
+  const note = `[better-claude] ${omitted} lines omitted (${Math.round(text.length / 1024)} KB total). Error/warning lines from the omitted part are kept below. Full output: ${file} — use grep -n "<pattern>" "<file>", or head/tail, to see more.`;
   return [...head, note, ...mid, ...tail].join("\n");
 }
 
@@ -53,6 +53,7 @@ readStdin((input) => {
     fs.writeFileSync(file, `$ ${cmd}\n--- stdout ---\n${so}\n--- stderr ---\n${se}\n`);
 
     const updated = { ...r, stdout: trim(so, se.length > 3000 ? 7000 : 10000, file), stderr: trim(se, 5000, file) };
+    logEvent({ rule: "bash-trim", tool: "Bash", before: so.length + se.length, after: updated.stdout.length + updated.stderr.length });
     out(JSON.stringify({ hookSpecificOutput: { hookEventName: "PostToolUse", updatedToolOutput: updated } }));
   } catch {}
   process.exit(0);

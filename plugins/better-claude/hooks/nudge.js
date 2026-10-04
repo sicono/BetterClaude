@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { loadConfig, tmpDir, safeId, readStdin, out } = require("./lib.js");
 
-if (process.env.TOKEN_SAVER_OFF === "1") process.exit(0);
+if (process.env.BETTER_CLAUDE_OFF === "1") process.exit(0);
 
 readStdin((input) => {
   try {
@@ -22,7 +22,7 @@ readStdin((input) => {
     fs.writeFileSync(f, JSON.stringify({ kb }));
     const mb = (kb / 1024).toFixed(1);
     out(JSON.stringify({
-      systemMessage: `token-saver: sesion larga (~${mb} MB de transcripcion, aproximado). Tarea nueva: /clear (se guarda un resumen automatico y se restaura solo). Misma tarea: /compact.`
+      systemMessage: `better-claude: sesion larga (~${mb} MB de transcripcion, aproximado). Tarea nueva: /clear (se guarda un resumen automatico y se restaura solo). Misma tarea: /compact.`
     }));
   } catch {}
   process.exit(0);

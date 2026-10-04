@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// /token-saver:audit — deterministic report of what loads into every session (approx tokens = bytes / 4). No model needed.
+// /better-claude:audit — deterministic report of what loads into every session (approx tokens = bytes / 4). No model needed.
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -14,7 +14,7 @@ const add = (what, bytes, note) => rows.push([what, tok(bytes), note || ""]);
 
 for (const p of [path.join(cwd, "CLAUDE.md"), path.join(cwd, ".claude", "CLAUDE.md"), path.join(home, ".claude", "CLAUDE.md")]) {
   const t = read(p);
-  if (t !== null) add(p.replace(home, "~"), Buffer.byteLength(t), tok(Buffer.byteLength(t)) > 2000 ? "grande: prueba /token-saver:slim-claudemd" : "");
+  if (t !== null) add(p.replace(home, "~"), Buffer.byteLength(t), tok(Buffer.byteLength(t)) > 2000 ? "grande: prueba /better-claude:slim-claudemd" : "");
 }
 
 // skills / agents / commands: only the frontmatter description loads at session start

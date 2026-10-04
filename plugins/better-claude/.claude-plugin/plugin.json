@@ -1,6 +1,6 @@
 {
-  "name": "token-saver",
-  "version": "1.6.0",
+  "name": "better-claude",
+  "version": "2.0.0",
   "description": "Autonomous, quality-first token savings: command/read guards, duplicate-read guard, automatic handoff across /clear, long-session nudge, huge-cat guard, noisy build/test output trimming (full output kept on disk), stale-resume warning, self-cleaning. No commands needed.",
   "author": { "name": "BlockHost" }
 }

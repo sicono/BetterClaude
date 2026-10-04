@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// /token-saver:clean — read-only report of what Claude Code stores on disk (transcripts, caches, token-saver data).
+// /better-claude:clean — read-only report of what Claude Code stores on disk (transcripts, caches, better-claude data).
 // Never deletes anything. Works on Windows/macOS/Linux (no `du` needed).
 const fs = require("fs");
 const os = require("os");
@@ -18,7 +18,7 @@ const size = (p) => {
 };
 const fmt = (b) => (b >= 1 << 30 ? (b / (1 << 30)).toFixed(1) + " GB" : b >= 1 << 20 ? (b / (1 << 20)).toFixed(1) + " MB" : Math.round(b / 1024) + " KB");
 
-const items = ["projects", "file-history", "todos", "shell-snapshots", "statsig", "plugins", "token-saver", "token-saver.log", "token-saver.log.old"]
+const items = ["projects", "file-history", "todos", "shell-snapshots", "statsig", "plugins", "better-claude", "better-claude.log", "better-claude.log.old"]
   .map((n) => [n, size(path.join(base, n))])
   .filter(([, s]) => s > 0)
   .sort((a, b) => b[1] - a[1]);

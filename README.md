@@ -1,6 +1,10 @@
 # BetterClaude
 
+![version](https://img.shields.io/badge/version-2.0.0-blue)
+
 Plugin para Claude Code que reduce el consumo de tokens sin cambiar lo que Claude puede hacer. Funciona solo, con hooks: una vez instalado no hace falta ejecutar nada.
+
+El historial de versiones está en [CHANGELOG.md](CHANGELOG.md).
 
 Es independiente del modelo (los hooks los ejecuta Claude Code, no el modelo) y necesita Node.js 16 o superior.
 
@@ -12,7 +16,7 @@ Es independiente del modelo (los hooks los ejecuta Claude Code, no el modelo) y 
 | `cat` de archivos enormes | Cada Bash | Bloquea `cat`, `bat` o `type` sobre archivos de más de 300 KB. No actúa con `\| head`, redirecciones ni archivos que no existen. |
 | Anti re-lectura | Cada Read | Bloquea releer el mismo archivo y rango, sin cambios, en las últimas 10 llamadas. Se reinicia tras `/compact`, `/clear` o al reanudar. |
 | Recorte de salida ruidosa | Tras cada Bash | Si `npm install/build/test`, `pip install`, `docker build`, `pytest`, `make`, `git clone` y similares imprimen más de 12 KB, Claude ve el principio, el final y las líneas de error y warning del medio. La salida completa se guarda en un archivo cuya ruta se le indica. Requiere Claude Code 2.1.236 o superior. |
-| Handoff automático | Al cerrar y abrir sesión | Extrae del transcript (sin modelo) la primera petición, las últimas, los archivos editados y el último mensaje de Claude. Se guarda en `~/.claude/token-saver/handoffs` y se inyecta una sola vez en `startup` y `clear`. Caduca a las 24 h. |
+| Handoff automático | Al cerrar y abrir sesión | Extrae del transcript (sin modelo) la primera petición, las últimas, los archivos editados y el último mensaje de Claude. Se guarda en `~/.claude/better-claude/handoffs` y se inyecta una sola vez en `startup` y `clear`. Caduca a las 24 h. |
 | Aviso de sesión larga | Al enviar un prompt | Mensaje solo para el usuario (no gasta tokens) cuando el transcript supera ~1,5 MB: `/clear` si cambias de tarea, `/compact` si sigues con la misma. |
 | Aviso al reanudar | Al reanudar | Si la sesión tiene más de 60k tokens y la caché del prompt caducó, avisa del coste de reenviarla. Requiere Claude Code 2.1.251 o superior. |
 | Limpieza propia | Al abrir sesión | Borra handoffs usados (más de 7 días) y caducados (más de 30). |
@@ -25,14 +29,14 @@ Terminal:
 
 ```
 claude plugin marketplace add sicono/BetterClaude
-claude plugin install token-saver@token-saver-marketplace
+claude plugin install better-claude@betterclaude
 ```
 
-App de escritorio: Plugins > Agregar > marketplace > `sicono/BetterClaude`, y después instalar `token-saver`.
+App de escritorio: Plugins > Agregar > marketplace > `sicono/BetterClaude`, y después instalar `better-claude`.
 
-Para probarlo en local sin instalar: `claude --plugin-dir ./plugins/token-saver`.
+Para probarlo en local sin instalar: `claude --plugin-dir ./plugins/better-claude`.
 
-Después de instalar hay que reiniciar Claude Code. Para comprobar que los hooks están activos, escribe `/hooks` o ejecuta `node plugins/token-saver/hooks/selftest.js`.
+Después de instalar hay que reiniciar Claude Code. Para comprobar que los hooks están activos, escribe `/hooks` o ejecuta `node plugins/better-claude/hooks/selftest.js`.
 
 ## Comandos
 
@@ -40,16 +44,16 @@ Son opcionales.
 
 | Comando | Descripción |
 |---|---|
-| `/token-saver:audit` | Mide lo que se carga en cada sesión: CLAUDE.md, MCP, plugins, skills. |
-| `/token-saver:stats` | Bloqueos por regla (`~/.claude/token-saver.log`). |
-| `/token-saver:clean` | Espacio que ocupa `~/.claude` (transcripciones, cachés). Solo informa, no borra. |
-| `/token-saver:doctor` | Autotest. |
-| `/token-saver:handoff` | Handoff manual redactado por Claude. Tiene prioridad sobre el automático. |
-| `/token-saver:slim-claudemd` | Propone un `CLAUDE.slim.md`. Nunca modifica el `CLAUDE.md`. |
+| `/better-claude:audit` | Mide lo que se carga en cada sesión: CLAUDE.md, MCP, plugins, skills. |
+| `/better-claude:stats` | Bloqueos por regla y texto recortado de las salidas (`~/.claude/better-claude.log`). |
+| `/better-claude:clean` | Espacio que ocupa `~/.claude` (transcripciones, cachés). Solo informa, no borra. |
+| `/better-claude:doctor` | Autotest. |
+| `/better-claude:handoff` | Handoff manual redactado por Claude. Tiene prioridad sobre el automático. |
+| `/better-claude:slim-claudemd` | Propone un `CLAUDE.slim.md`. Nunca modifica el `CLAUDE.md`. |
 
 ## Configuración
 
-Archivo `~/.claude/token-saver.json` (global) y/o `.claude/token-saver.json` (proyecto):
+Archivo `~/.claude/better-claude.json` (global) y/o `.claude/better-claude.json` (proyecto):
 
 ```json
 {
@@ -69,7 +73,7 @@ Reglas que se pueden desactivar con `disable`: `interactive`, `pm2-logs`, `journ
 
 Atajos:
 
-- `TOKEN_SAVER_OFF=1` apaga todos los hooks.
+- `BETTER_CLAUDE_OFF=1` apaga todos los hooks.
 - `# ts-allow` al final de un comando Bash lo deja pasar una vez.
 - `# ts-full` al final de un comando Bash evita que se recorte su salida.
 
@@ -83,7 +87,7 @@ Atajos:
 
 ```
 .claude-plugin/marketplace.json
-plugins/token-saver/
+plugins/better-claude/
   .claude-plugin/plugin.json
   commands/
   hooks/

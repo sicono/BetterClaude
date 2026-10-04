@@ -1,18 +1,18 @@
-// Shared helpers for token-saver hooks.
+// Shared helpers for better-claude hooks.
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
 const ARR = ["disable", "allowCommands", "extraNoisy", "trimCommands"];
 
-// Config: global ~/.claude/token-saver.json, then project <cwd>/.claude/token-saver.json
+// Config: global ~/.claude/better-claude.json, then project <cwd>/.claude/better-claude.json
 // { "disable": ["tree"], "allowCommands": ["^pm2 logs blockhost"], "extraNoisy": ["/generated/"],
 //   "autoHandoff": true, "warnTranscriptKB": 1500 }
 function loadConfig(cwd) {
   const cfg = { disable: [], allowCommands: [], extraNoisy: [], autoHandoff: true, warnTranscriptKB: 1500, catBigKB: 300, trimBashKB: 12, resumeWarnTokens: 60000, trimCommands: [] };
-  if (process.env.TOKEN_SAVER_WARN_KB) cfg.warnTranscriptKB = Number(process.env.TOKEN_SAVER_WARN_KB) || cfg.warnTranscriptKB;
-  if (process.env.TOKEN_SAVER_NO_CONFIG === "1") return cfg;
-  const files = [path.join(os.homedir(), ".claude", "token-saver.json"), path.join(cwd || process.cwd(), ".claude", "token-saver.json")];
+  if (process.env.BETTER_CLAUDE_WARN_KB) cfg.warnTranscriptKB = Number(process.env.BETTER_CLAUDE_WARN_KB) || cfg.warnTranscriptKB;
+  if (process.env.BETTER_CLAUDE_NO_CONFIG === "1") return cfg;
+  const files = [path.join(os.homedir(), ".claude", "better-claude.json"), path.join(cwd || process.cwd(), ".claude", "better-claude.json")];
   for (const f of files) {
     try {
       const j = JSON.parse(fs.readFileSync(f, "utf8"));
@@ -27,8 +27,8 @@ function loadConfig(cwd) {
   return cfg;
 }
 
-const tmpDir = () => path.join(os.tmpdir(), "token-saver");
-const dataDir = () => path.join(os.homedir(), ".claude", "token-saver");
+const tmpDir = () => path.join(os.tmpdir(), "better-claude");
+const dataDir = () => path.join(os.homedir(), ".claude", "better-claude");
 const safeId = (s) => String(s || "").replace(/[^\w-]/g, "").slice(0, 80);
 const cwdKey = (cwd) => require("crypto").createHash("sha1").update(path.resolve(cwd || process.cwd())).digest("hex").slice(0, 12);
 
@@ -50,4 +50,16 @@ function out(s) {
   catch { try { process.stdout.write(b.subarray(off)); } catch {} }
 }
 
-module.exports = { loadConfig, tmpDir, dataDir, safeId, cwdKey, readStdin, out };
+// Append one JSON line to ~/.claude/better-claude.log (rotated at 500 KB). Opt out with BETTER_CLAUDE_NO_LOG=1.
+function logEvent(o) {
+  if (process.env.BETTER_CLAUDE_NO_LOG === "1") return;
+  try {
+    const dir = path.join(os.homedir(), ".claude");
+    const f = path.join(dir, "better-claude.log");
+    fs.mkdirSync(dir, { recursive: true });
+    try { if (fs.statSync(f).size > 500000) fs.renameSync(f, f + ".old"); } catch {}
+    fs.appendFileSync(f, JSON.stringify({ t: new Date().toISOString(), ...o }) + "\n");
+  } catch {}
+}
+
+module.exports = { loadConfig, tmpDir, dataDir, safeId, cwdKey, readStdin, out, logEvent };

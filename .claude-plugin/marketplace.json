@@ -1,10 +1,10 @@
 {
-  "name": "token-saver-marketplace",
+  "name": "betterclaude",
   "owner": { "name": "BlockHost" },
   "plugins": [
     {
-      "name": "token-saver",
-      "source": "./plugins/token-saver",
+      "name": "better-claude",
+      "source": "./plugins/better-claude",
       "description": "Ahorro de tokens sin perder calidad: bloquea logs infinitos, lecturas de archivos generados y cat de archivos enormes; handoff automatico; informe de espacio."
     }
   ]

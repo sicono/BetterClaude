@@ -1,18 +1,18 @@
 #!/usr/bin/env node
-// token-saver 1.4 (quality-first). Blocks only calls that waste tokens WITHOUT giving Claude useful info:
+// better-claude 1.4 (quality-first). Blocks only calls that waste tokens WITHOUT giving Claude useful info:
 //  - programs that hang or never end (interactive, follow/stream) or dump an entire log/journal
 //  - root-wide find/grep/tree/ls -R that walk node_modules/.git
 //  - cat of a huge file (> catBigKB, default 300 KB) into context
 //  - reading vendored/generated files (node_modules, dist, lockfiles, *.min.*, *.map) in full
 //  - re-reading the SAME unchanged file/range within the last 10 tool calls (its content is still in context)
 // It never limits normal source-file reads. Exit code 2 = block; stderr goes to Claude.
-// Disable all: TOKEN_SAVER_OFF=1 | one Bash call: "# ts-allow" | per-rule/project: .claude/token-saver.json
+// Disable all: BETTER_CLAUDE_OFF=1 | one Bash call: "# ts-allow" | per-rule/project: .claude/better-claude.json
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { loadConfig, tmpDir, safeId, readStdin } = require("./lib.js");
 
-if (process.env.TOKEN_SAVER_OFF === "1") process.exit(0);
+if (process.env.BETTER_CLAUDE_OFF === "1") process.exit(0);
 
 const DUP_WINDOW = 10;
 // Soft rules: if a model insists on the exact same call a 3rd time it clearly needs it, so let it through
@@ -95,7 +95,7 @@ readStdin((input) => {
   } catch { process.exit(0); } // never break the session because of the guard
   if (res) {
     log(res.rule, input.tool_name);
-    process.stderr.write("[token-saver] " + res.msg + "\n");
+    process.stderr.write("[better-claude] " + res.msg + "\n");
     process.exit(2);
   }
   process.exit(0);
@@ -131,10 +131,10 @@ function dupRead(ti, s) {
 }
 
 function log(rule, tool) {
-  if (process.env.TOKEN_SAVER_NO_LOG === "1") return;
+  if (process.env.BETTER_CLAUDE_NO_LOG === "1") return;
   try {
     const dir = path.join(os.homedir(), ".claude");
-    const f = path.join(dir, "token-saver.log");
+    const f = path.join(dir, "better-claude.log");
     fs.mkdirSync(dir, { recursive: true });
     try { if (fs.statSync(f).size > 500000) fs.renameSync(f, f + ".old"); } catch {}
     fs.appendFileSync(f, JSON.stringify({ t: new Date().toISOString(), rule, tool }) + "\n");

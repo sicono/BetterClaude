@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // SessionEnd: build a MECHANICAL handoff from the transcript (no model, nothing invented):
 // first/latest user requests, files edited, last assistant message. Saved outside the project
-// (~/.claude/token-saver/handoffs) so it can never be committed. session.js restores it once.
+// (~/.claude/better-claude/handoffs) so it can never be committed. session.js restores it once.
 const fs = require("fs");
 const path = require("path");
 const { loadConfig, dataDir, cwdKey, readStdin } = require("./lib.js");
 
-if (process.env.TOKEN_SAVER_OFF === "1") process.exit(0);
+if (process.env.BETTER_CLAUDE_OFF === "1") process.exit(0);
 
 const cut = (s, n) => { s = String(s).replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
 
@@ -30,7 +30,7 @@ readStdin((input) => {
         if (typeof m.content === "string") t = m.content;
         else if (Array.isArray(m.content)) t = m.content.filter((b) => b && b.type === "text").map((b) => b.text).join("\n");
         t = t.trim();
-        if (t && !t.startsWith("<") && !t.startsWith("[token-saver]") && !t.startsWith("Caveat:")) prompts.push(t);
+        if (t && !t.startsWith("<") && !t.startsWith("[better-claude]") && !t.startsWith("Caveat:")) prompts.push(t);
       } else if (o.type === "assistant" && Array.isArray(m.content)) {
         for (const b of m.content) {
           if (!b) continue;
@@ -45,7 +45,7 @@ readStdin((input) => {
 
     const recent = prompts.slice(-3).filter((p) => p !== prompts[0]);
     const fl = [...files];
-    let out = `[token-saver] Auto-extracted summary of the previous session in this project (ended: ${input.reason || "unknown"}, ${new Date().toISOString()}). It may be unrelated to the new task: use it only if relevant, and verify files before editing.\n`;
+    let out = `[better-claude] Auto-extracted summary of the previous session in this project (ended: ${input.reason || "unknown"}, ${new Date().toISOString()}). It may be unrelated to the new task: use it only if relevant, and verify files before editing.\n`;
     out += `First request: ${cut(prompts[0] || "", 300)}\n`;
     if (recent.length) out += "Latest requests:\n" + recent.map((p) => "- " + cut(p, 200)).join("\n") + "\n";
     if (fl.length) out += `Files edited (${fl.length}): ${fl.slice(-15).join(", ")}\n`;

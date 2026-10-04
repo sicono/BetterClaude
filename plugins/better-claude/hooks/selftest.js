@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Self-test for token-saver. Run: node selftest.js   (or /token-saver:doctor)
+// Self-test for better-claude. Run: node selftest.js   (or /better-claude:doctor)
 const { spawnSync } = require("child_process");
 const fs = require("fs");
 const os = require("os");
@@ -9,8 +9,8 @@ const H = __dirname;
 const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), "ts-self-"));
 const home = path.join(sandbox, "home"); fs.mkdirSync(home);
 const cwd = path.join(sandbox, "proj"); fs.mkdirSync(cwd);
-const env = { ...process.env, HOME: home, USERPROFILE: home, TOKEN_SAVER_NO_LOG: "1", TOKEN_SAVER_NO_CONFIG: "1" };
-delete env.TOKEN_SAVER_OFF;
+const env = { ...process.env, HOME: home, USERPROFILE: home, BETTER_CLAUDE_NO_LOG: "1", BETTER_CLAUDE_NO_CONFIG: "1" };
+delete env.BETTER_CLAUDE_OFF;
 
 let fail = 0;
 const check = (ok, label) => { if (!ok) fail++; console.log(`${ok ? "PASS" : "FAIL"}  ${label}`); };
@@ -53,7 +53,7 @@ for (const [cmd, want] of [["cat huge.log", 2], ["cat -n huge.log", 2], ["cat hu
 const vs = "valve-" + process.pid;
 check([1, 2, 3].map(() => guard("Bash", { command: "cat huge.log" }, vs)).join() === "2,2,0", "valve: soft rule releases on 3rd identical attempt");
 check([1, 2, 3, 4].map(() => guard("Bash", { command: "pm2 logs app" }, vs)).join() === "2,2,2,2", "valve: hang rules never relax");
-try { fs.rmSync(path.join(os.tmpdir(), "token-saver", vs + ".json"), { force: true }); } catch {}
+try { fs.rmSync(path.join(os.tmpdir(), "better-claude", vs + ".json"), { force: true }); } catch {}
 
 // 2) duplicate-read guard
 const f = path.join(cwd, "a.js"); fs.writeFileSync(f, "console.log(1)\n".repeat(50));
@@ -66,7 +66,7 @@ check(guard("Read", { file_path: f }, sid) === 0, "dup-read: modified file allow
 run("session.js", { session_id: sid, source: "compact", cwd });
 check(guard("Read", { file_path: f }, sid) === 0, "dup-read: state reset after compact");
 check(guard("Read", { file_path: f }, sid) === 2, "dup-read: blocks again after reset");
-try { fs.rmSync(path.join(os.tmpdir(), "token-saver", sid + ".json"), { force: true }); } catch {}
+try { fs.rmSync(path.join(os.tmpdir(), "better-claude", sid + ".json"), { force: true }); } catch {}
 
 // 3) auto-handoff round trip (SessionEnd -> SessionStart)
 const tl = [
@@ -87,10 +87,10 @@ run("autohandoff.js", { transcript_path: triv, cwd, reason: "other", session_id:
 check(run("session.js", { source: "startup", cwd, session_id: "s5" }).stdout.trim() === "", "auto-handoff: trivial session writes nothing");
 run("autohandoff.js", { transcript_path: tp, cwd, reason: "clear", session_id: "s6" });
 check(run("session.js", { source: "resume", cwd, session_id: "s7" }).stdout.trim() === "", "auto-handoff: not injected on resume/compact");
-run("autohandoff.js", { transcript_path: tp, cwd, reason: "clear", session_id: "s8" }, { TOKEN_SAVER_OFF: "1" });
+run("autohandoff.js", { transcript_path: tp, cwd, reason: "clear", session_id: "s8" }, { BETTER_CLAUDE_OFF: "1" });
 
 // 3b) prune of old handoffs
-const hdir = path.join(home, ".claude", "token-saver", "handoffs"); fs.mkdirSync(hdir, { recursive: true });
+const hdir = path.join(home, ".claude", "better-claude", "handoffs"); fs.mkdirSync(hdir, { recursive: true });
 const oldUsed = path.join(hdir, "viejo.used.md"), oldStale = path.join(hdir, "caducado.md"), newUsed = path.join(hdir, "reciente.used.md");
 for (const p of [oldUsed, oldStale, newUsed]) fs.writeFileSync(p, "x");
 const ago = (d) => new Date(Date.now() - d * 86400000);
@@ -100,7 +100,7 @@ check(!fs.existsSync(oldUsed) && !fs.existsSync(oldStale) && fs.existsSync(newUs
 
 // 3c) space report runs and never deletes
 const sp = run("space.js", {});
-check(sp.status === 0 && /token-saver|transcripciones|Total/i.test(sp.stdout), "space.js runs");
+check(sp.status === 0 && /better-claude|transcripciones|Total/i.test(sp.stdout), "space.js runs");
 check(fs.existsSync(newUsed), "space.js does not delete anything");
 
 // 4) manual handoff has priority
@@ -111,16 +111,16 @@ check(/MANUAL/.test(r3.stdout) && !/Auto-extracted/.test(r3.stdout), "manual han
 
 // 5) nudge
 const big = path.join(sandbox, "big.jsonl"); fs.writeFileSync(big, "x".repeat(3000));
-const n1 = run("nudge.js", { transcript_path: big, session_id: "n1", cwd }, { TOKEN_SAVER_WARN_KB: "1" });
+const n1 = run("nudge.js", { transcript_path: big, session_id: "n1", cwd }, { BETTER_CLAUDE_WARN_KB: "1" });
 let msg = ""; try { msg = JSON.parse(n1.stdout).systemMessage || ""; } catch {}
 check(/sesion larga/.test(msg), "nudge: warns on big session");
-check(run("nudge.js", { transcript_path: big, session_id: "n1", cwd }, { TOKEN_SAVER_WARN_KB: "1" }).stdout === "", "nudge: does not repeat");
+check(run("nudge.js", { transcript_path: big, session_id: "n1", cwd }, { BETTER_CLAUDE_WARN_KB: "1" }).stdout === "", "nudge: does not repeat");
 check(run("nudge.js", { transcript_path: big, session_id: "n2", cwd }).stdout === "", "nudge: silent below threshold");
-try { for (const s of ["n1", "n2"]) fs.rmSync(path.join(os.tmpdir(), "token-saver", "nudge-" + s + ".json"), { force: true }); } catch {}
+try { for (const s of ["n1", "n2"]) fs.rmSync(path.join(os.tmpdir(), "better-claude", "nudge-" + s + ".json"), { force: true }); } catch {}
 
 // 5b) deterministic report scripts (no model involved)
 fs.mkdirSync(path.join(home, ".claude"), { recursive: true });
-fs.writeFileSync(path.join(home, ".claude", "token-saver.log"), JSON.stringify({ t: new Date().toISOString(), rule: "tree", tool: "Bash" }) + "\n");
+fs.writeFileSync(path.join(home, ".claude", "better-claude.log"), JSON.stringify({ t: new Date().toISOString(), rule: "tree", tool: "Bash" }) + "\n");
 const st = run("stats.js", {});
 check(st.status === 0 && /Bloqueos: 1 en total/.test(st.stdout) && /tree/.test(st.stdout), "stats.js reports blocks");
 const au = spawnSync(process.execPath, [path.join(H, "audit.js")], { cwd, env, encoding: "utf8" });
@@ -139,9 +139,12 @@ check(upd && upd.interrupted === false && upd.isImage === false && upd.stderr ==
 check(fs.existsSync(path.join(sp2, "out-toolu_t1.txt")) && fs.readFileSync(path.join(sp2, "out-toolu_t1.txt"), "utf8").includes("linea 1499 "), "bash-trim: full output saved to file");
 check(post("cat src/index.js", base).stdout === "", "bash-trim: ignores non-noisy commands (cat/grep/diff)");
 check(post("npm run build", { ...base, stdout: "ok\n" }).stdout === "", "bash-trim: small output untouched");
+post("npm run build", base, {}, { BETTER_CLAUDE_NO_LOG: "0" });
+const st2 = run("stats.js", {});
+check(/Bloqueos: 1 en total/.test(st2.stdout) && /Recortes de salida: 1 en total/.test(st2.stdout) && /KB de texto/.test(st2.stdout), "stats: reports trims separately from blocks");
 check(post("npm run build # ts-full", base).stdout === "", "bash-trim: # ts-full skips");
 check(post("npm run build", { ...base, interrupted: true }).stdout === "", "bash-trim: interrupted output untouched");
-check(post("npm run build", base, {}, { TOKEN_SAVER_OFF: "1" }).stdout === "", "bash-trim: TOKEN_SAVER_OFF respected");
+check(post("npm run build", base, {}, { BETTER_CLAUDE_OFF: "1" }).stdout === "", "bash-trim: BETTER_CLAUDE_OFF respected");
 
 // 5d) stale resume warning (user-only message)
 const rw = run("session.js", { source: "resume", cwd, session_id: "rw1", context_tokens: 182000, prompt_cache_likely_expired: true, estimated_cache_write_usd: 1.14 });
@@ -154,7 +157,7 @@ check(run("session.js", { source: "resume", cwd, session_id: "rw3", context_toke
 console.log(`\nnode ${process.version} on ${process.platform}`);
 for (const x of ["hooks.json", "guard.js", "session.js", "autohandoff.js", "nudge.js", "lib.js", "space.js", "stats.js", "audit.js", "post.js"]) check(fs.existsSync(path.join(H, x)), `file ${x}`);
 try { JSON.parse(fs.readFileSync(path.join(H, "hooks.json"), "utf8")); check(true, "hooks.json is valid JSON"); } catch { check(false, "hooks.json is valid JSON"); }
-for (const x of [path.join(os.homedir(), ".claude", "token-saver.json"), path.join(process.cwd(), ".claude", "token-saver.json")])
+for (const x of [path.join(os.homedir(), ".claude", "better-claude.json"), path.join(process.cwd(), ".claude", "better-claude.json")])
   if (fs.existsSync(x)) console.log("info config found: " + x);
 
 try { fs.rmSync(sandbox, { recursive: true, force: true }); } catch {}
