@@ -1,6 +1,6 @@
 # BetterClaude
 
-![version](https://img.shields.io/badge/version-2.3.0-blue)
+![version](https://img.shields.io/badge/version-2.4.0-blue)
 
 Plugin para Claude Code que reduce el consumo de tokens sin cambiar lo que Claude puede hacer. Funciona solo, con hooks: una vez instalado no hace falta ejecutar nada.
 
@@ -16,6 +16,8 @@ Es independiente del modelo (los hooks los ejecuta Claude Code, no el modelo) y 
 | `cat` de archivos enormes | Cada Bash | Bloquea `cat`, `bat` o `type` sobre archivos de más de 300 KB. No actúa con `\| head`, redirecciones ni archivos que no existen. |
 | Anti re-lectura | Cada Read | Bloquea releer un rango que ya está en el contexto: el mismo, o uno contenido en una lectura anterior (por ejemplo, las líneas 10-30 tras leer el archivo entero), si el archivo no cambió y fue en las últimas 10 llamadas. Una lectura sin `limit` de un archivo de más de 80 KB no se registra, porque pudo fallar por tamaño. Se reinicia tras `/compact`, `/clear` o al reanudar. |
 | Anti re-lectura de imágenes | Cada Read de `.png/.jpg/.gif/.webp` | Bloquea (una vez) volver a abrir una imagen que ya está en el contexto y no ha cambiado (misma ruta, fecha y tamaño), dentro de las últimas 25 llamadas (`imgWindow`). Una captura o render regenerado tiene otra fecha y pasa. Si repites la lectura, pasa. Se reinicia tras `/compact`, `/clear` o al reanudar. |
+| Blender sin `-b` | Cada Bash | Bloquea `blender archivo.blend` sin `-b`/`--background`: abre la interfaz y cuelga la shell. Pasa con `-b`, `--version`, `--help`, con `timeout N` o con `# ts-allow`. |
+| Binarios 3D y de assets | Cada Read y `cat` | Bloquea Read/`cat` de `.blend`, `.glb`, `.fbx`, `.exr`, `.hdr`, `.psd`, zip y similares (solo devuelven bytes ilegibles) y sugiere un script headless que imprima lo necesario. |
 | Capturas de Blender repetidas | Cada llamada al MCP de Blender | Bloquea (una vez) `get_viewport_screenshot` con los mismos argumentos si desde la última captura no ha habido ninguna llamada que cambie la escena (`execute_blender_code`, importaciones...). Los `get_*`/`list_*` no cuentan como cambio. Funciona con cualquier servidor MCP cuyo nombre contenga `blender`. |
 | Salida de `blender` por terminal | Tras `blender ...` | Colapsa los avisos de progreso del render (`Fra:1 Mem:... Sample 12/128`) a la última línea de cada tanda; mantiene `Warning:`, `Error:`, `Saved:`, cabecera y trazas. Si aun así pasa de 12 KB, recorta como el resto de builds y guarda la salida completa. |
 | Reducir imágenes (opcional, apagado) | Cada Read de imagen | Con `imgMaxEdge` > 0, las imágenes con el lado largo mayor se sustituyen por una copia reducida (mantiene proporción y orientación EXIF; el original no se toca; si pides el original, pasa). Usa `magick`, `convert`, `sips` o Python+Pillow, lo que haya; si no hay ninguno, no hace nada. **Esto sí pierde detalle**, por eso viene apagado. |
@@ -80,7 +82,7 @@ Archivo `~/.claude/better-claude.json` (global) y/o `.claude/better-claude.json`
 }
 ```
 
-Reglas que se pueden desactivar con `disable`: `interactive`, `pm2-logs`, `journalctl-follow`, `journalctl-unbounded`, `docker-follow`, `docker-unbounded`, `kubectl-follow`, `kubectl-unbounded`, `tail-follow`, `ping`, `logcat`, `grep-root`, `find-root`, `tree`, `ls-recursive`, `cat-noise`, `cat-big`, `git-log-patch`, `git-log-unbounded`, `npm-ls`, `cat-binary`, `ls-noise`, `read-noise`, `dup-read`, `dup-image`, `img-fit`, `blender-shot`, `diff-omit`, `bash-trim` (también desactiva la limpieza sin pérdida).
+Reglas que se pueden desactivar con `disable`: `interactive`, `pm2-logs`, `journalctl-follow`, `journalctl-unbounded`, `docker-follow`, `docker-unbounded`, `kubectl-follow`, `kubectl-unbounded`, `tail-follow`, `ping`, `logcat`, `grep-root`, `find-root`, `tree`, `ls-recursive`, `cat-noise`, `cat-big`, `git-log-patch`, `git-log-unbounded`, `npm-ls`, `cat-binary`, `ls-noise`, `read-noise`, `dup-read`, `dup-image`, `img-fit`, `blender-shot`, `blender-gui`, `read-binary`, `diff-omit`, `bash-trim` (también desactiva la limpieza sin pérdida).
 
 `dupWindow` son las llamadas durante las que una lectura cuenta como "aún en contexto" (máximo 50). Súbelo en sesiones cortas con mucho contexto; bájalo si notas que Claude pierde el hilo de lo leído.
 

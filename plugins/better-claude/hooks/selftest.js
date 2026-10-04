@@ -41,6 +41,9 @@ const cases = [
   ["Bash", "cat release.zip", 2], ["Bash", "cat app.db", 2], ["Bash", "cat release.zip | gunzip", 0], ["Bash", "cat notes.txt", 0],
   ["Bash", "ls node_modules", 2], ["Bash", "ls ./node_modules/", 2], ["Bash", "ls node_modules/lodash", 0], ["Bash", "find node_modules -name '*.d.ts'", 0], ["Bash", "ls node_modules | head -n 20", 0],
   ["Bash", "git log | head -n 20", 0], ["Bash", "journalctl -u nginx | tail -n 50", 0],
+  ["Bash", "blender scene.blend", 2], ["Bash", "blender -b scene.blend --python x.py", 0], ["Bash", "blender --version", 0], ["Bash", "timeout 60 blender scene.blend", 0],
+  ["Bash", "blender scene.blend # ts-allow", 0], ["Bash", "grep blender notes.txt", 0], ["Bash", "cd p && /opt/blender/blender x.blend | head -n 5", 2], ["Bash", "cat model.blend", 2], ["Bash", "cat render.exr", 2],
+  ["Read", "/x/scene.blend", 2], ["Read", "/x/model.glb", 2], ["Read", "/x/pack.zip", 2], ["Read", "/x/notes.txt", 0],
   ["Read", "/x/node_modules/a/index.js", 2], ["Read", "/x/dist/app.min.js", 2],
   ["Read", "C:\\proj\\node_modules\\a\\i.js", 2], ["Read", "/x/src/server.js", 0],
 ];
@@ -49,6 +52,7 @@ for (const [tool, v, want] of cases) {
   check(st === want, `${tool.padEnd(4)} ${v}  (exit ${st}, expected ${want})`);
 }
 check(guard("Read", { file_path: "/x/package-lock.json", limit: 50 }) === 0, "Read with explicit limit is allowed");
+check(guard("Read", { file_path: "/x/scene.blend", limit: 50 }) === 2, "read-binary: an explicit limit does not make a binary readable");
 
 // 1b) cat-big (real files in the sandbox project)
 fs.writeFileSync(path.join(cwd, "huge.log"), "linea de log\n".repeat(30000));

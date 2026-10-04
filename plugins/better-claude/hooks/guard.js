@@ -12,16 +12,16 @@
 // Disable all: BETTER_CLAUDE_OFF=1 | one Bash call: "# ts-allow" | per-rule/project: .claude/better-claude.json
 const fs = require("fs");
 const path = require("path");
-const { loadConfig, tmpDir, safeId, readStdin, logEvent } = require("./lib.js");
+const { loadConfig, tmpDir, safeId, readStdin, logEvent, BLENDER_CMD } = require("./lib.js");
 const { isImage, dims, estTokens, fit } = require("./img.js");
 
 if (process.env.BETTER_CLAUDE_OFF === "1") process.exit(0);
 
 // Soft rules: if a model insists on the exact same call a 3rd time it clearly needs it, so let it through
 // (never trap a weaker model in a retry loop that would waste more tokens than the call). Hang rules (follow/interactive/pm2) never relax.
-const SOFT = new Set(["journalctl-unbounded", "docker-unbounded", "kubectl-unbounded", "grep-root", "find-root", "tree", "ls-recursive", "cat-noise", "cat-big", "git-log-patch", "git-log-unbounded", "npm-ls", "cat-binary", "ls-noise", "read-noise", "dup-read", "dup-image", "img-fit", "blender-shot"]);
+const SOFT = new Set(["journalctl-unbounded", "docker-unbounded", "kubectl-unbounded", "grep-root", "find-root", "tree", "ls-recursive", "cat-noise", "cat-big", "git-log-patch", "git-log-unbounded", "npm-ls", "cat-binary", "ls-noise", "read-noise", "read-binary", "dup-read", "dup-image", "img-fit", "blender-shot"]);
 // Hang rules: the call never ends, so a pipe to head/grep does NOT make it safe. Only `timeout N` or `# ts-allow` lets them through.
-const HANG = new Set(["interactive", "pm2-logs", "journalctl-follow", "docker-follow", "kubectl-follow", "tail-follow", "ping", "logcat"]);
+const HANG = new Set(["blender-gui", "interactive", "pm2-logs", "journalctl-follow", "docker-follow", "kubectl-follow", "tail-follow", "ping", "logcat"]);
 const TIMED = /(^|[\s;&|(])timeout\s+(-\S+\s+)*\d/;
 const MAX_BLOCKS = 2;
 // Image rules block ONCE: if the model repeats the call it really needs the pixels again (viewport moved by hand, file regenerated in place...).
@@ -39,6 +39,8 @@ const BASH_RULES = [
     return /^\s*(?:sudo\s+)?(top|htop|btop|watch|nano|vim?|less|more)(\s|$)/.test(c) || /\bpm2\s+monit\b/.test(c)
       ? "Interactive/never-ending program hangs the shell tool. Use a non-interactive form (e.g. top -b -n 1, or Read)." : null;
   }],
+  ["blender-gui", (c) => BLENDER_CMD.test(c) && !/(^|\s)(-b|--background|-h|--help|-v|--version)(\s|$)/.test(c)
+    ? "`blender` without -b opens the GUI and never returns, which hangs the shell. Run it headless: blender -b file.blend --python script.py (add -noaudio). To inspect a scene, print data from a --python script instead of opening it." : null],
   ["pm2-logs", (c) => /\bpm2\s+logs\b/.test(c) && !/--nostream/.test(c)
     ? "`pm2 logs` streams forever. Use: pm2 logs <app> --nostream --lines 200" : null],
   ["journalctl-follow", (c) => /\bjournalctl\b/.test(c) && /(\s-f\b|--follow)/.test(c)
@@ -95,7 +97,7 @@ const BASH_RULES = [
       : "Full dependency tree is huge. Use: " + m[1] + " ls --depth=0, or " + m[1] + " ls <package>";
   }],
   ["cat-binary", (c) => /^\s*(cat|bat|type)\s/.test(c) && !/[|<>]/.test(c)
-    && /\.(zip|tar|gz|tgz|bz2|xz|7z|rar|exe|dll|so|dylib|bin|o|a|class|jar|pyc|sqlite3?|db|woff2?|ttf|otf|ico|png|jpe?g|gif|webp|pdf|mp[34]|mov|wasm|parquet)(\s|$|[\"'])/i.test(c)
+    && /\.(zip|tar|gz|tgz|bz2|xz|7z|rar|exe|dll|so|dylib|bin|o|a|class|jar|pyc|sqlite3?|db|woff2?|ttf|otf|ico|png|jpe?g|gif|webp|pdf|mp[34]|mov|wasm|parquet|blend1?|glb|fbx|exr|hdr|psd|usdc|abc|bmp|tiff?)(\s|$|[\"'])/i.test(c)
     ? "That is a binary file: cat prints unreadable bytes. Use `file <path>`, `unzip -l`/`tar -tf` for archives, or Read for images and PDFs." : null],
   ["ls-noise", (c) => {
     // Listing node_modules itself (thousands of entries). `ls node_modules/pkg` or a find with -name/-maxdepth is fine.
@@ -257,10 +259,13 @@ function checkBash(cmd, cfg, cwd) {
 // cat-big embeds the size in its message ("<file> is N KB.")
 function bytesOf(msg) { const m = / is (\d+) KB\./.exec(msg); return m ? Number(m[1]) * 1024 : 0; }
 
+const BINARY_READ = /\.(blend1?|glb|fbx|exr|hdr|psd|usdc|abc|zip|tar|gz|tgz|bz2|xz|7z|rar|exe|dll|so|dylib|bin|o|a|class|jar|pyc|sqlite3?|db|woff2?|ttf|otf|wasm|parquet)$/i;
 function checkRead(ti, cfg) {
-  if (cfg.disable.includes("read-noise")) return null;
   const p = String(ti.file_path || "");
   if (!p) return null;
+  if (!cfg.disable.includes("read-binary") && BINARY_READ.test(p))
+    return { rule: "read-binary", msg: `${p.replace(/\\/g, "/")} is a binary file: Read would return unreadable bytes. For .blend/.glb/.fbx use a headless script (blender -b file --python-expr "..." printing what you need); for archives use unzip -l / tar -tf; otherwise \`file <path>\`.` };
+  if (cfg.disable.includes("read-noise")) return null;
   const lim = Number(ti.limit);
   if (Number.isFinite(lim) && lim > 0) return null; // any explicit range is fine
   const norm = p.replace(/\\/g, "/");

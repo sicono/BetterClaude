@@ -11,7 +11,7 @@ const MEAN = {
   "grep-root": "grep -r sobre la raiz (recorre node_modules/.git)", "find-root": "find desde la raiz (recorre node_modules/.git)",
   tree: "tree sin limite", "ls-recursive": "ls -R", "cat-noise": "cat de lockfile/generado/vendored", "cat-big": "cat de un archivo enorme",
   "git-log-patch": "git log -p/--stat sin limite", "git-log-unbounded": "git log sin limite (historial entero)", "npm-ls": "arbol de dependencias completo", "cat-binary": "cat de un archivo binario", "ls-noise": "ls/find sobre node_modules entero", "kubectl-follow": "kubectl logs -f: stream infinito", "kubectl-unbounded": "kubectl logs sin --tail", ping: "ping sin -c (no termina)", logcat: "adb logcat sin limite", "read-noise": "Read de node_modules/dist/lockfile/min", "dup-read": "releer el mismo archivo/rango sin cambios",
-  "dup-image": "releer una imagen que ya esta en contexto y no cambio", "img-fit": "imagen reducida a imgMaxEdge antes de enviarla", "blender-shot": "captura de Blender repetida sin cambios en la escena",
+  "dup-image": "releer una imagen que ya esta en contexto y no cambio", "img-fit": "imagen reducida a imgMaxEdge antes de enviarla", "blender-shot": "captura de Blender repetida sin cambios en la escena", "blender-gui": "blender sin -b: abre la interfaz y cuelga la shell", "read-binary": "Read de un binario (.blend/.glb/.fbx/zip...)",
 };
 const base = path.join(os.homedir(), ".claude");
 const rows = [];

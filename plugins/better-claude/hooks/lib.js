@@ -67,4 +67,8 @@ function logEvent(o) {
   } catch {}
 }
 
-module.exports = { loadConfig, tmpDir, dataDir, safeId, cwdKey, readStdin, out, logEvent };
+// `blender ...` at the START of a command (also after && ; | ( , behind sudo/xvfb-run, with a quoted path that has spaces).
+// Anchored on purpose: `grep blender notes.txt` must never be trimmed.
+const BLENDER_CMD = /(^|[;&|(]\s*)(sudo\s+)?(xvfb-run\s+(-\S+\s+)*)?("[^"]*[\/\\]|'[^']*[\/\\]|["']|\S*[\/\\])?blender(\.exe)?["']?\s/;
+
+module.exports = { BLENDER_CMD, loadConfig, tmpDir, dataDir, safeId, cwdKey, readStdin, out, logEvent };

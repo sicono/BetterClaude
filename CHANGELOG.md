@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.0 - 2026-10-04
+- Regla `blender-gui`: bloquea `blender` sin `-b`/`--background` (abre la interfaz y cuelga la shell). Es una regla de las que no terminan: solo pasa con `timeout N` o `# ts-allow`.
+- Regla `read-binary`: bloquea Read de `.blend`, `.glb`, `.fbx`, `.exr`, `.hdr`, `.psd`, `.usdc`, `.abc`, archivos comprimidos, ejecutables y bases de datos, aunque lleven `limit`. `cat-binary` cubre ahora también esas extensiones y `.bmp`/`.tiff`.
+- `BLENDER_CMD` se comparte desde `lib.js` entre `guard.js` y `post.js`.
+
 ## 2.3.0 - 2026-10-04
 - Imágenes: regla `dup-image`, que bloquea (una vez) releer una imagen sin cambios que ya está en el contexto. Antes las imágenes pasaban por el anti re-lectura de texto y no se controlaban bien. Nueva opción `imgWindow`.
 - Blender (MCP): regla `blender-shot`, que bloquea (una vez) repetir la misma captura del viewport si la escena no ha cambiado desde la anterior. El matcher de `PreToolUse` ahora incluye `mcp__*blender*`.

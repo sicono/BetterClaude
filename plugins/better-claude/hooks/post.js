@@ -9,13 +9,10 @@
 // Skip once: "# ts-full" at the end of the command. Disable: "bash-trim" in config. Threshold: trimBashKB (default 12).
 const fs = require("fs");
 const path = require("path");
-const { loadConfig, tmpDir, safeId, readStdin, out, logEvent } = require("./lib.js");
+const { loadConfig, tmpDir, safeId, readStdin, out, logEvent, BLENDER_CMD } = require("./lib.js");
 
 if (process.env.BETTER_CLAUDE_OFF === "1") process.exit(0);
 
-// `blender ...` at the START of a command (also after && ; | ( , behind sudo/xvfb-run, with a quoted path that has spaces).
-// Anchored on purpose: `grep blender notes.txt` must never be trimmed.
-const BLENDER_CMD = /(^|[;&|(]\s*)(sudo\s+)?(xvfb-run\s+(-\S+\s+)*)?("[^"]*[\/\\]|'[^']*[\/\\]|["']|\S*[\/\\])?blender(\.exe)?["']?\s/;
 const NOISY = new RegExp([
   "\\b(npm|pnpm|yarn|bun)\\s+(i|install|ci|add|test|run|build|exec)\\b", "\\bnpx\\b", "\\bpip3?\\s+install\\b",
   "\\bdocker(\\s+compose|-compose)?\\s+(build|pull|push|up)\\b", "\\b(pytest|jest|vitest|mocha|phpunit|playwright|cypress|rspec|ctest)\\b",
